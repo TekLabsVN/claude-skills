@@ -1,6 +1,6 @@
 ---
 name: ui-design
-version: 1.0.0
+version: 1.0.1
 description: |
   Web UI design skill. Designs production-ready React components and layouts using
   MagicUI as the primary component library, Shadcn/ui as base primitives, Tailwind
@@ -144,6 +144,37 @@ Recommended palette:
 
 Ask: "Does this palette work, or would you like to adjust it?"
 
+Once the palette is confirmed, write/update `ui-design.md` in the project root with the confirmed design tokens:
+
+```markdown
+# UI Design Tokens
+
+## Style
+[confirmed style name(s)]
+
+## Color Palette
+| Token      | Hex     | Description |
+|------------|---------|-------------|
+| Primary    | #...    | ...         |
+| Secondary  | #...    | ...         |
+| Accent     | #...    | ...         |
+| Neutral    | #...    | ...         |
+| Background | #...    | ...         |
+
+## Typography
+- Display: [font name or TBD]
+- Body: [font name or TBD]
+- UI: [font name or TBD]
+
+## Dark Mode
+[Light only / Dark only / Both]
+
+## Components
+<!-- Auto-populated by /ui-design -->
+```
+
+If `ui-design.md` already exists, update only the fields that changed (preserve the Components section).
+
 ---
 
 ## Phase 2 — Component Plan
@@ -179,7 +210,10 @@ No two components should have the same skeleton.
 
 ## Phase 3 — HTML Preview
 
-Generate a self-contained `preview.html` that demonstrates the design visually. This is NOT a React file — it uses Tailwind CDN and vanilla JS for speed.
+Generate a self-contained HTML preview that demonstrates the design visually. This is NOT a React file — it uses Tailwind CDN and vanilla JS for speed.
+
+**Save path:** `design/previews/[component-name]-preview.html` (create the directory if it doesn't exist).
+This keeps all previews versioned with the project rather than floating in a temp location.
 
 ```html
 <!DOCTYPE html>
@@ -212,10 +246,10 @@ Generate a self-contained `preview.html` that demonstrates the design visually. 
 </html>
 ```
 
-Write this file, then open it:
+Write the file to `design/previews/[component-name]-preview.html`, then open it:
 
 ```bash
-open preview.html
+mkdir -p design/previews && open design/previews/[component-name]-preview.html
 ```
 
 Then ask the user: "Preview is open in your browser. Does the direction look right? Proceed as-is, or any adjustments before I write the React code?"
@@ -277,23 +311,25 @@ If any required library is not in package.json, output install commands at the t
 
 ---
 
-## Phase 5 — DESIGN.md Update
+## Phase 5 — Design Doc Updates
 
-If `DESIGN.md` exists, append the new component to a `## Components` registry section:
+### ui-design.md — Components registry (always)
+
+Append the new component to the `## Components` section of `ui-design.md` (created in Phase 1):
 
 ```markdown
-## Components
-
 ### [ComponentName]
 - **File**: `components/[name]/index.tsx`
+- **Preview**: `design/previews/[name]-preview.html`
 - **Variants**: default, loading, empty, error
 - **Color tokens**: primary, accent
 - **Icons**: `ArrowRight`, `SpinnerGap` (Phosphor)
 - **MagicUI**: `MagicCard`, `ShimmerButton`
 ```
 
-If no DESIGN.md exists, note it in the output:
-> "No DESIGN.md found in this project. Run `/design-consultation` first to establish a design system, then future components will auto-inherit it."
+### DESIGN.md — if present
+
+If `DESIGN.md` also exists, append the same component entry to its `## Components` registry to keep both in sync.
 
 ---
 
@@ -314,7 +350,8 @@ If no DESIGN.md exists, note it in the output:
 When done, output:
 
 ```
-✓ HTML Preview:   preview.html (open in browser)
+✓ HTML Preview:   design/previews/[name]-preview.html
+✓ Design tokens:  ui-design.md (created / updated)
 ✓ Component:      components/[name]/index.tsx
 ✓ States:         default, hover, active, focus, loading, empty, error
 ✓ Accessibility:  WCAG 2.1 AA, ARIA roles, keyboard nav
