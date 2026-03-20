@@ -1,0 +1,89 @@
+{
+  "skill_name": "aws-s3-cloudfront-setup",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Hey I want to set up S3 with CloudFront for my app. I've never used AWS CLI before, I don't even have it installed. Can you help me set this up? I want to store user-uploaded images.",
+      "expected_output": "Claude should detect AWS CLI is not installed, guide through installation, explain how to configure credentials securely (without ever asking user to paste keys into chat), then gather bucket name / region / IAM username, and walk through what the setup script will do. Should clearly explain credentials are saved locally to a file.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "detects_missing_aws_cli",
+          "description": "Response acknowledges AWS CLI is not installed and provides install instructions"
+        },
+        {
+          "id": "install_instructions_present",
+          "description": "Includes at least one platform-specific install command (brew install awscli, curl installer, or MSI)"
+        },
+        {
+          "id": "credential_security_warning",
+          "description": "Explicitly warns user NOT to paste credentials into chat, email, or online tools"
+        },
+        {
+          "id": "aws_configure_guidance",
+          "description": "Explains the aws configure command and what inputs it expects"
+        },
+        {
+          "id": "credentials_saved_locally",
+          "description": "Clearly states that access keys are written to a local file, not displayed in the terminal or chat"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "set up s3 cloudfront iam for bucket name 'my-media-assets-prod', region ap-southeast-1, iam user 'media-uploader'",
+      "expected_output": "Claude should check AWS CLI and credentials are working, confirm the three inputs look valid, then run the setup script with those args. Should present the CloudFront domain and path to credentials file at the end. Should warn that credentials file is sensitive.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "validates_inputs",
+          "description": "Confirms or validates the bucket name, region, and IAM username before running"
+        },
+        {
+          "id": "runs_script_with_correct_args",
+          "description": "Setup script is invoked with --bucket my-media-assets-prod --region ap-southeast-1 --username media-uploader"
+        },
+        {
+          "id": "shows_cloudfront_domain",
+          "description": "Final output includes a CloudFront domain URL (*.cloudfront.net)"
+        },
+        {
+          "id": "credentials_file_path_shown",
+          "description": "Tells user the exact file path where credentials are saved"
+        },
+        {
+          "id": "no_keys_in_output",
+          "description": "Actual AWS access key or secret key values are NOT printed anywhere in the response"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have AWS CLI installed and configured already. Create me a private S3 bucket with CloudFront in front of it. I need an IAM user that can only access this bucket. The bucket should be called 'project-docs-backup-2024' in us-west-2.",
+      "expected_output": "Claude should verify AWS credentials work, ask for the missing IAM username, confirm the setup details, run the script, and emphasise security aspects: locked bucket, OAC, scoped IAM policy, credentials saved locally.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "asks_for_missing_username",
+          "description": "Detects IAM username was not provided and asks for it before proceeding"
+        },
+        {
+          "id": "oac_mentioned",
+          "description": "Mentions OAC (Origin Access Control) — the modern approach — not the deprecated OAI"
+        },
+        {
+          "id": "bucket_locked_confirmed",
+          "description": "States that the S3 bucket has all public access blocked"
+        },
+        {
+          "id": "cloudfront_only_access",
+          "description": "Communicates that files are only accessible through CloudFront, not via direct S3 URLs"
+        },
+        {
+          "id": "iam_policy_scoped",
+          "description": "Explains that the IAM user's policy is restricted to this specific bucket only"
+        }
+      ]
+    }
+  ]
+}
