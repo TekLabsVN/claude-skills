@@ -1,0 +1,293 @@
+---
+name: ui-design
+version: 1.0.0
+description: |
+  Web UI design skill. Designs production-ready React components and layouts using
+  MagicUI as the primary component library, Shadcn/ui as base primitives, Tailwind
+  for styling, and Phosphor icons. Asks for design preferences (style, palette, dark
+  mode), optionally crawls reference URLs/Figma for inspiration, generates a visual
+  HTML preview before writing any production code, and updates DESIGN.md when present.
+  Use when asked to "design a component", "build a UI", "/ui-design", or "design this page".
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - AskUserQuestion
+  - WebSearch
+  - Agent
+---
+
+## Phase 0 — Silent Context Gathering
+
+Run these checks silently before asking the user anything.
+
+### 0A. Read DESIGN.md
+
+```bash
+cat DESIGN.md 2>/dev/null || echo "NO_DESIGN_MD"
+```
+
+If found, extract and remember:
+- Color palette (primary, secondary, accent, neutrals, background)
+- Font families (display, body, UI)
+- Design style / aesthetic direction
+- Dark mode preference (light / dark / both)
+- Spacing scale / base unit
+- Any existing component registry
+
+### 0B. Scan for existing components
+
+```bash
+find . -type f -name "*.tsx" -o -name "*.jsx" | grep -iE "(component|ui|shared)" | grep -v node_modules | grep -v ".next" | head -40
+```
+
+Note any existing components that might overlap with what the user is about to request. You'll surface relevant ones during intake.
+
+### 0C. Check installed libraries
+
+```bash
+cat package.json 2>/dev/null | grep -E '"magicui|@phosphor-icons|shadcn|tailwindcss|framer-motion"'
+```
+
+Note which are present and which are missing. You'll mention missing ones before generating code.
+
+---
+
+## Phase 1 — Design Intake
+
+Use AskUserQuestion to gather design preferences. Ask all at once (max 4 questions).
+
+**Question 1 — What to design**
+Ask: "What component, section, or page do you want to design? Describe it freely — what it does, who uses it, and any key interactions."
+
+**Question 2 — Reference materials** (optional)
+Ask: "Any reference URLs, Figma links, or screenshots for visual inspiration? (paste a URL or skip)"
+- If a URL is provided: use WebSearch or the browse skill to crawl it and extract:
+  - Dominant colors used
+  - Layout patterns
+  - Typography style
+  - Mood / aesthetic direction
+  - Component patterns you can borrow
+
+**Question 3 — Design style**
+Present these options (allow mix or custom):
+- **Minimalism** — Less is more. Ample white space, simple typography, reduced palette. Clean and elegant.
+- **Flat / Flat 2.0** — 2D elements, bright colors. Flat 2.0 adds subtle shadows for depth.
+- **Glassmorphism** — Translucent frosted-glass panels, vivid backgrounds, layered depth.
+- **Neumorphism** — Soft-UI. Elements seem to extrude from the background with inner shadows.
+- **Maximalism** — More is more. Vibrant clashing colors, layered textures, dense composition.
+- **Swiss / Grid** — Strong modular grid, clean sans-serif, disciplined whitespace.
+- **Bento** — Tile-based, rounded rectangles, dashboard-grid layout.
+- **Retrofuturism / Y2K** — Grainy textures, neon, nostalgia. 80s–90s inspired.
+- **Hand-Drawn** — Sketchy lines, imperfect shapes, personal handmade feel.
+- **Collage** — Photography + stickers + textures, scrapbook playfulness.
+- Or describe a mix / something else.
+
+If DESIGN.md specifies a style, pre-fill the question with that style and ask for confirmation or override.
+
+**Question 4 — Dark / Light mode**
+- Light only
+- Dark only
+- Both (generate both variants)
+
+If DESIGN.md specifies, pre-fill and confirm.
+
+### After intake: Color Palette
+
+If no color palette was provided and DESIGN.md has none, **auto-recommend one** based on the chosen style + project name/purpose. Display it before proceeding:
+
+```
+Recommended palette:
+  Primary:    #1A1A2E  (Deep navy)
+  Secondary:  #16213E  (Slate blue)
+  Accent:     #E94560  (Coral red)
+  Neutral:    #F5F5F5  (Off-white)
+  Background: #0F3460  (Dark indigo)
+```
+
+Ask: "Does this palette work, or would you like to adjust it?"
+
+---
+
+## Phase 2 — Component Plan
+
+No user interaction in this phase. Think through the design silently, then print a brief plan:
+
+### Component architecture
+- Name, file path, and subcomponents
+- Props interface (TypeScript)
+- States to implement: **default, hover, active, focus, loading, empty, error, disabled**
+- Responsive strategy: mobile-first by default (sm → md → lg → xl breakpoints)
+
+### Library mapping
+- Which **MagicUI** components to use (e.g., `MagicCard`, `AnimatedGradient`, `ShimmerButton`, `BorderBeam`, `AnimatedBeam`, `NumberTicker`, `Meteors`, etc.)
+- Which **Shadcn** primitives as base layer (e.g., `Button`, `Card`, `Dialog`, `Input`, `Badge`, etc.)
+- Which **Phosphor** icons needed and their weight (Regular / Bold / Fill / Duotone / Thin / Light)
+- Tailwind utility strategy (colors from palette, spacing scale, typography)
+
+### Deduplication check
+If a similar component was found in Phase 0B, surface it:
+> "I found `components/ui/CardGrid.tsx` which handles a similar layout. Should I extend it, or design a new component from scratch?"
+
+### Layout differentiation
+Do NOT use cookie-cutter layouts. Actively vary:
+- Composition axis (horizontal / vertical / diagonal / radial)
+- Anchor point (center / off-center / edge-pinned)
+- Grid structure (symmetric / asymmetric / intentionally broken)
+- Density (generous whitespace vs. controlled density)
+
+No two components should have the same skeleton.
+
+---
+
+## Phase 3 — HTML Preview
+
+Generate a self-contained `preview.html` that demonstrates the design visually. This is NOT a React file — it uses Tailwind CDN and vanilla JS for speed.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Component Name] Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            // Insert palette from Phase 1
+          }
+        }
+      },
+      darkMode: 'class'
+    }
+  </script>
+  <style>
+    /* Any custom CSS for effects that Tailwind can't express cleanly */
+  </style>
+</head>
+<body class="[bg-color] min-h-screen flex items-center justify-center p-8">
+  <!-- Component HTML here -->
+  <!-- Include all key states: hover states via CSS, show loading/empty/error variants stacked -->
+</body>
+</html>
+```
+
+Write this file, then open it:
+
+```bash
+open preview.html
+```
+
+Then ask the user: "Preview is open in your browser. Does the direction look right? Proceed as-is, or any adjustments before I write the React code?"
+
+If the user wants adjustments: iterate on `preview.html` only (fast cycle). Repeat until approved.
+
+---
+
+## Phase 4 — Production React Code
+
+Write the production component(s). Follow these rules:
+
+### File structure
+```
+components/[name]/
+  index.tsx          ← main component
+  [name].types.ts    ← TypeScript interfaces/types (if substantial)
+```
+
+Or a single file if simple: `components/ui/[Name].tsx`
+
+### Code standards
+- **TypeScript** — full type coverage, no `any`
+- **MagicUI** as primary visual components
+- **Shadcn** primitives as structural base
+- **Phosphor** icons: `import { IconName } from "@phosphor-icons/react"`
+- **Tailwind** for all layout/spacing/color — use CSS variables for palette
+- **Dark mode**: all `bg-*`, `text-*`, `border-*` classes paired with `dark:` variants
+
+### Accessibility — MANDATORY (never skip)
+Every component must include:
+- Semantic HTML elements (`<nav>`, `<main>`, `<article>`, `<section>`, `<button>`, etc.)
+- ARIA roles where native semantics are insufficient
+- `aria-label` / `aria-labelledby` on interactive elements
+- Keyboard navigation: all interactive elements reachable via Tab, activated via Enter/Space
+- Focus rings: `focus-visible:ring-2 focus-visible:ring-[accent]`
+- Color contrast: WCAG 2.1 AA minimum (4.5:1 for normal text, 3:1 for large text)
+- `alt` text on all images
+
+### All states — MANDATORY (never skip)
+```tsx
+// Always implement:
+// • Default
+// • Hover (via Tailwind hover: prefix)
+// • Active / pressed
+// • Focus-visible
+// • Loading (skeleton or spinner variant)
+// • Empty (no data variant)
+// • Error (error message variant)
+// • Disabled (when applicable)
+```
+
+### Missing libraries
+If any required library is not in package.json, output install commands at the top as a comment:
+```
+// Run first: npm install @phosphor-icons/react
+// Run first: npx magicui-cli add magic-card
+```
+
+---
+
+## Phase 5 — DESIGN.md Update
+
+If `DESIGN.md` exists, append the new component to a `## Components` registry section:
+
+```markdown
+## Components
+
+### [ComponentName]
+- **File**: `components/[name]/index.tsx`
+- **Variants**: default, loading, empty, error
+- **Color tokens**: primary, accent
+- **Icons**: `ArrowRight`, `SpinnerGap` (Phosphor)
+- **MagicUI**: `MagicCard`, `ShimmerButton`
+```
+
+If no DESIGN.md exists, note it in the output:
+> "No DESIGN.md found in this project. Run `/design-consultation` first to establish a design system, then future components will auto-inherit it."
+
+---
+
+## Design Anti-patterns — NEVER do these
+
+- **Generic layouts**: centered card on white background with blue CTA button
+- **Overused fonts**: Inter, Roboto, Arial, system-ui as body font (use something with character)
+- **Same skeleton twice**: if this project already has a card component, don't build another with the same grid
+- **AI slop colors**: purple gradient on white, teal-on-grey, generic blue primary
+- **Inaccessible shortcuts**: skipping ARIA, not implementing focus states, poor contrast ratios
+- **Placeholder states forgotten**: components that break or look empty when loading/no-data
+- **Mobile afterthought**: designing desktop-first, then crunching to mobile
+
+---
+
+## Completion
+
+When done, output:
+
+```
+✓ HTML Preview:   preview.html (open in browser)
+✓ Component:      components/[name]/index.tsx
+✓ States:         default, hover, active, focus, loading, empty, error
+✓ Accessibility:  WCAG 2.1 AA, ARIA roles, keyboard nav
+✓ Dark mode:      [yes / no / both]
+✓ DESIGN.md:      [updated / not found]
+
+Missing installs (if any):
+  npm install @phosphor-icons/react
+  npx magicui-cli add [component]
+```
