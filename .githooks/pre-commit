@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Auto-bump patch version for any modified SKILL.md files on commit.
+# New skill files (git status A) are skipped — they start at their declared version.
+# If the only staged change to a SKILL.md is the version line itself, it is also skipped
+# (user bumped manually).
+
+set -euo pipefail
+
+VERSIONS_FILE="versions.json"
+
+# Find staged SKILL.md files that are modifications (not new additions)
+MODIFIED_SKILLS=$(git diff --cached --name-status | awk '/^M\t[^/]+\/SKILL\.md$/ { sub(/^M\t/, ""); sub(/\/SKILL\.md$/, ""); print }' || true)
+
+if [ -z "$MODIFIED_SKILLS" ]; then
+  exit 0
+fi
+
+BUMPED=0
+
+for SKILL in $MODIFIED_SKILLS; do
+  SKILL_FILE="$SKILL/SKILL.md"
+
+  # If the only staged change is the version line, user already bumped — skip
+  NON_VERSION_DIFF=$(git diff --cached "$SKILL_FILE" | grep '^[+-]' | grep -v '^---\|^+++' | grep -v '^[+-]version:' || true)
+  if [ -z "$NON_VERSION_DIFF" ]; then
+    continue
+  fi
+
+  # Read current version from frontmatter
+  CURRENT=$(grep -m1 '^version:' "$SKILL_FILE" | sed 's/version:[[:space:]]*//')
+  if [ -z "$CURRENT" ]; then
+    echo "  ⚠️  No version found in $SKILL_FILE, skipping auto-bump"
+    continue
+  fi
+
+  # Bump patch version (MAJOR.MINOR.PATCH → MAJOR.MINOR.PATCH+1)
+  MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+  MINOR=$(echo "$CURRENT" | cut -d. -f2)
+  PATCH=$(echo "$CURRENT" | cut -d. -f3)
+  NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+
+  # Update version in SKILL.md frontmatter
+  sed -i '' "s/^version: ${CURRENT}$/version: ${NEW_VERSION}/" "$SKILL_FILE"
+
+  # Update versions.json
+  sed -i '' "s/\"${SKILL}\": \"${CURRENT}\"/\"${SKILL}\": \"${NEW_VERSION}\"/" "$VERSIONS_FILE"
+
+  # Update updated_at in versions.json
+  TODAY=$(date +%Y-%m-%d)
+  sed -i '' "s/\"updated_at\": \"[^\"]*\"/\"updated_at\": \"${TODAY}\"/" "$VERSIONS_FILE"
+
+  # Re-stage modified files
+  git add "$SKILL_FILE" "$VERSIONS_FILE"
+
+  echo "  ✓ $SKILL: v${CURRENT} → v${NEW_VERSION}"
+  BUMPED=$((BUMPED + 1))
+done
+
+if [ "$BUMPED" -gt 0 ]; then
+  echo "🔢 Auto-bumped $BUMPED skill version(s)"
+fi
+
+exit 0

@@ -16,6 +16,40 @@ allowed-tools:
   - Glob
   - Grep
   - AskUserQuestion
+  - WebFetch
+---
+
+## Pre-flight — Version Check
+
+Run this silently before anything else. Do NOT mention it to the user unless the skill is outdated.
+
+**Step 1 — Fetch the latest version manifest:**
+
+Use WebFetch to GET `https://raw.githubusercontent.com/TekLabsVN/Teklabs-claude-custom-skills/main/versions.json`
+
+- If the fetch fails (network error, offline), skip this entire phase silently and continue to Phase 0.
+- If it succeeds, parse the JSON and read `skills.animate` as `LATEST_VERSION`.
+
+**Step 2 — Compare versions:**
+
+The current installed version of this skill is defined in the frontmatter above: `version: 1.0.0` — call this `CURRENT_VERSION`.
+
+Compare `CURRENT_VERSION` with `LATEST_VERSION` using semantic versioning. If they are equal, skip the rest of this phase silently.
+
+**Step 3 — Prompt the user (only if outdated):**
+
+If `LATEST_VERSION` is newer than `CURRENT_VERSION`, use AskUserQuestion to ask:
+
+> "The **animate** skill you're using is **v{CURRENT_VERSION}**, but **v{LATEST_VERSION}** is available. Auto-update now? (yes / no — update will overwrite `~/.claude/skills/animate/SKILL.md`)"
+
+**Step 4 — Auto-update (only if user says yes):**
+
+1. Use WebFetch to GET `https://raw.githubusercontent.com/TekLabsVN/Teklabs-claude-custom-skills/main/animate/SKILL.md`
+2. Use Write to overwrite `~/.claude/skills/animate/SKILL.md` with the fetched content.
+3. Tell the user: "✓ animate skill updated to v{LATEST_VERSION}. Please re-run `/animate` to use the latest version." Then STOP — do not continue with the outdated skill logic.
+
+If the user says no, continue with the current skill as-is.
+
 ---
 
 ## Phase 0 — Silent Context Gathering
