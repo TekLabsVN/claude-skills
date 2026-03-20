@@ -9,7 +9,7 @@ set -euo pipefail
 VERSIONS_FILE="versions.json"
 
 # Find staged SKILL.md files that are modifications (not new additions)
-MODIFIED_SKILLS=$(git diff --cached --name-status | awk '/^M\t[^/]+\/SKILL\.md$/ { sub(/^M\t/, ""); sub(/\/SKILL\.md$/, ""); print }' || true)
+MODIFIED_SKILLS=$(git diff --cached --name-status | grep -E $'^M\t[^/]+/SKILL\\.md$' | sed $'s/^M\t//;s|/SKILL\\.md$||' || true)
 
 if [ -z "$MODIFIED_SKILLS" ]; then
   exit 0
