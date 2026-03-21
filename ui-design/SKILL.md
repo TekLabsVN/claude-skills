@@ -1,6 +1,6 @@
 ---
 name: ui-design
-version: 1.0.3
+version: 1.0.5
 description: |
   Web UI design skill. Designs production-ready React components and layouts using
   MagicUI as the primary component library, Shadcn/ui as base primitives, Tailwind
@@ -210,12 +210,13 @@ No two components should have the same skeleton.
 
 ---
 
-## Phase 3 — HTML Preview
+## Phase 3 — Dual Preview
 
-Generate a self-contained HTML preview that demonstrates the design visually. This is NOT a React file — it uses Tailwind CDN and vanilla JS for speed.
+Generate **both previews simultaneously** — HTML (fast approximation) and React (actual libraries). The user will compare them and choose which to base the final design tokens on.
 
-**Save path:** `design/previews/[component-name]-preview.html` (create the directory if it doesn't exist).
-This keeps all previews versioned with the project rather than floating in a temp location.
+### 3A — HTML Preview
+
+**Save path:** `design/previews/[component-name]-preview.html`
 
 ```html
 <!DOCTYPE html>
@@ -227,54 +228,30 @@ This keeps all previews versioned with the project rather than floating in a tem
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            // Insert palette from Phase 1
-          }
-        }
-      },
+      theme: { extend: { colors: { /* palette from Phase 1 */ } } },
       darkMode: 'class'
     }
   </script>
-  <style>
-    /* Any custom CSS for effects that Tailwind can't express cleanly */
-  </style>
+  <style>/* Custom CSS for effects Tailwind can't express */</style>
 </head>
 <body class="[bg-color] min-h-screen flex items-center justify-center p-8">
-  <!-- Component HTML here -->
-  <!-- Include all key states: hover states via CSS, show loading/empty/error variants stacked -->
+  <!-- Component HTML — show all states: default, hover, loading, empty, error stacked -->
 </body>
 </html>
 ```
 
-Write the file to `design/previews/[component-name]-preview.html`, then open it:
-
-```bash
-mkdir -p design/previews && open design/previews/[component-name]-preview.html
-```
-
-Then ask the user: "Preview is open in your browser. Does the direction look right? Proceed as-is, or any adjustments before I write the React code?"
-
-If the user wants adjustments: iterate on `preview.html` only (fast cycle). Repeat until approved.
-
----
-
-## Phase 3B — React Preview Page
-
-Once the HTML preview is approved, generate a React preview page using the actual production libraries. This lets the user compare the two outputs and catch any rendering differences before the component is integrated.
+### 3B — React Preview Page
 
 **Save path:** `design/previews/[component-name]-preview.tsx`
 
-Rules for the React preview:
-- A standalone Next.js page or React component that renders the design using real libraries
-- Import and use actual **MagicUI** components (not simulated HTML equivalents)
+Rules:
+- Standalone Next.js page (`"use client"`) — renders via the dev server
+- Import and use actual **MagicUI** components (not CSS simulations)
 - Import **Phosphor** icons: `import { IconName } from "@phosphor-icons/react"`
 - Use **Shadcn/ui** primitives as structural base
-- Use **Tailwind** classes with the confirmed palette tokens
-- Wrap in a centered `<div>` with matching background so it previews cleanly at any route
-- Include all key states visible on screen (stacked or tabbed) — same as the HTML preview
-- Add a small `// PREVIEW ONLY` comment at the top so it's clear this is not production code
+- Use **Tailwind** with the confirmed palette tokens
+- Show all key states on screen (stacked or tabbed) — same states as 3A
+- Add `// PREVIEW ONLY — delete before shipping` at the top
 
 ```tsx
 // PREVIEW ONLY — delete before shipping
@@ -282,33 +259,36 @@ Rules for the React preview:
 
 import { MagicCard } from "@/components/magicui/magic-card";
 import { ArrowRight } from "@phosphor-icons/react";
-// ... other imports
 
 export default function [ComponentName]Preview() {
   return (
     <div className="min-h-screen bg-[#...] flex items-center justify-center p-8">
-      {/* Default state */}
-      {/* Loading state */}
-      {/* Error state */}
-      {/* Empty state */}
+      {/* Default, loading, error, empty states */}
     </div>
   );
 }
 ```
 
-Open both previews for comparison:
+### Open both
 
 ```bash
+mkdir -p design/previews
 open design/previews/[component-name]-preview.html
-open design/previews/[component-name]-preview.tsx
 ```
 
-(The `.tsx` preview runs via the project's dev server at its file path — mention the route to the user.)
+Mention the React preview route: `http://localhost:3000/design/previews/[component-name]-preview` (or wherever the dev server maps it).
 
-Then ask: "Both previews are ready. HTML preview (fast/approximate) and React preview (actual libraries). Do they look consistent? Any final adjustments before I write the production component?"
+If there are visual differences between the two, call them out explicitly before asking:
+> "The React preview uses MagicUI's actual border beam animation; the HTML preview approximates it with CSS. Layout and palette are identical."
 
-If differences exist between the two, note them explicitly:
-> "The React preview uses MagicUI's actual border beam effect, which adds a subtle animated glow the HTML preview simulated with CSS. Everything else matches."
+Then ask:
+> "Both previews are open. The **HTML version** is a fast approximation; the **React version** uses the real MagicUI/Phosphor/Shadcn components.
+> 1. Any adjustments to either?
+> 2. Which should be the source of truth for design tokens — **HTML** or **React**?"
+
+**Remember the user's choice** — call it `DESIGN_SOURCE` (either `html` or `react`). It will determine which preview Phase 5 uses when writing `ui-design.md`.
+
+If the user wants adjustments: edit the relevant file (or both if it's a palette change) and re-open. Repeat until approved and a source is chosen.
 
 ---
 
@@ -369,17 +349,21 @@ If any required library is not in package.json, output install commands at the t
 
 ### ui-design.md — Components registry (always)
 
-Append the new component to the `## Components` section of `ui-design.md` (created in Phase 1):
+Use `DESIGN_SOURCE` (chosen by the user in Phase 3) to determine which preview is listed as the canonical reference. Append the new component to the `## Components` section of `ui-design.md`:
 
 ```markdown
 ### [ComponentName]
 - **File**: `components/[name]/index.tsx`
-- **Preview**: `design/previews/[name]-preview.html`
+- **Preview (source of truth)**: `design/previews/[name]-preview.[html|tsx]`  ← whichever DESIGN_SOURCE is
+- **Preview (reference)**: `design/previews/[name]-preview.[html|tsx]`  ← the other one
+- **Design based on**: [HTML approximation | React/MagicUI actual]
 - **Variants**: default, loading, empty, error
 - **Color tokens**: primary, accent
 - **Icons**: `ArrowRight`, `SpinnerGap` (Phosphor)
 - **MagicUI**: `MagicCard`, `ShimmerButton`
 ```
+
+Also update the `## Color Palette` and `## Style` sections in `ui-design.md` if the chosen preview led to any token adjustments during Phase 3 iteration.
 
 ### DESIGN.md — if present
 
