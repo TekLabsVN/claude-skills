@@ -1,12 +1,14 @@
 ---
 name: ui-design
-version: 1.0.1
+version: 1.0.3
 description: |
   Web UI design skill. Designs production-ready React components and layouts using
   MagicUI as the primary component library, Shadcn/ui as base primitives, Tailwind
   for styling, and Phosphor icons. Asks for design preferences (style, palette, dark
-  mode), optionally crawls reference URLs/Figma for inspiration, generates a visual
-  HTML preview before writing any production code, and updates DESIGN.md when present.
+  mode), optionally crawls reference URLs/Figma for inspiration, generates both an
+  HTML preview (Tailwind CDN) and a React preview (real MagicUI/Phosphor/Shadcn) before
+  writing production code, so you can compare the two and catch rendering differences early.
+  Updates ui-design.md with confirmed design tokens and DESIGN.md when present.
   Use when asked to "design a component", "build a UI", "/ui-design", or "design this page".
 allowed-tools:
   - Bash
@@ -258,6 +260,58 @@ If the user wants adjustments: iterate on `preview.html` only (fast cycle). Repe
 
 ---
 
+## Phase 3B — React Preview Page
+
+Once the HTML preview is approved, generate a React preview page using the actual production libraries. This lets the user compare the two outputs and catch any rendering differences before the component is integrated.
+
+**Save path:** `design/previews/[component-name]-preview.tsx`
+
+Rules for the React preview:
+- A standalone Next.js page or React component that renders the design using real libraries
+- Import and use actual **MagicUI** components (not simulated HTML equivalents)
+- Import **Phosphor** icons: `import { IconName } from "@phosphor-icons/react"`
+- Use **Shadcn/ui** primitives as structural base
+- Use **Tailwind** classes with the confirmed palette tokens
+- Wrap in a centered `<div>` with matching background so it previews cleanly at any route
+- Include all key states visible on screen (stacked or tabbed) — same as the HTML preview
+- Add a small `// PREVIEW ONLY` comment at the top so it's clear this is not production code
+
+```tsx
+// PREVIEW ONLY — delete before shipping
+"use client";
+
+import { MagicCard } from "@/components/magicui/magic-card";
+import { ArrowRight } from "@phosphor-icons/react";
+// ... other imports
+
+export default function [ComponentName]Preview() {
+  return (
+    <div className="min-h-screen bg-[#...] flex items-center justify-center p-8">
+      {/* Default state */}
+      {/* Loading state */}
+      {/* Error state */}
+      {/* Empty state */}
+    </div>
+  );
+}
+```
+
+Open both previews for comparison:
+
+```bash
+open design/previews/[component-name]-preview.html
+open design/previews/[component-name]-preview.tsx
+```
+
+(The `.tsx` preview runs via the project's dev server at its file path — mention the route to the user.)
+
+Then ask: "Both previews are ready. HTML preview (fast/approximate) and React preview (actual libraries). Do they look consistent? Any final adjustments before I write the production component?"
+
+If differences exist between the two, note them explicitly:
+> "The React preview uses MagicUI's actual border beam effect, which adds a subtle animated glow the HTML preview simulated with CSS. Everything else matches."
+
+---
+
 ## Phase 4 — Production React Code
 
 Write the production component(s). Follow these rules:
@@ -351,6 +405,7 @@ When done, output:
 
 ```
 ✓ HTML Preview:   design/previews/[name]-preview.html
+✓ React Preview:  design/previews/[name]-preview.tsx
 ✓ Design tokens:  ui-design.md (created / updated)
 ✓ Component:      components/[name]/index.tsx
 ✓ States:         default, hover, active, focus, loading, empty, error
